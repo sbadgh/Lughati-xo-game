@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحدي X O في مهارات لغتي</title>
+    <!-- خط عربي جميل -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- مكتبة لقصاصات الفرح عند الفوز -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #4a90e2;
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            font-weight: 900;
+        }
+
+        .teacher-name {
+            color: #e67e22;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: #fdf3e7;
+            display: inline-block;
+            padding: 5px 20px;
+            border-radius: 20px;
+            border: 1px dashed #f39c12;
+        }
+
+        /* شاشات اللعبة */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* شاشة البداية */
+        .btn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.6);
+        }
+
+        .mode-select {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .mode-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .mode-btn.selected {
+            background: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        /* لوحة اللعب XO */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 12px;
+        }
+
+        .player-turn {
+            padding: 5px 15px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .player-turn.active-x {
+            background: #ff7675;
+            color: white;
+        }
+
+        .player-turn.active-o {
+            background: #74b9ff;
+            color: white;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .cell {
+            background: #f1f2f6;
+            aspect-ratio: 1;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .cell:hover {
+            background: #dfe4ea;
+            transform: scale(1.03);
+        }
+
+        .cell.x {
+            color: #ff7675;
+        }
+
+        .cell.o {
+            color: #0984e3;
+        }
+
+        /* نافذة السؤال المنبثقة */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: popUp 0.3s ease;
+        }
+
+        @keyframes popUp {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .skill-badge {
+            background: #ffeaa7;
+            color: #d63031;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2d3436;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: #f1f2f6;
+            border: 2px solid #dfe4ea;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .option-btn:hover {
+            background: #74b9ff;
+            color: white;
+            border-color: #0984e3;
+        }
+
+        /* تصميم الشهادة */
+        .certificate-container {
+            background: #fff;
+            border: 10px solid #d4af37;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .cert-title {
+            font-size: 2rem;
+            color: #d4af37;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .cert-body {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            line-height: 1.8;
+        }
+
+        .winner-name-input {
+            width: 80%;
+            padding: 10px;
+            font-size: 1.2rem;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .print-btn {
+            background: #e67e22;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .certificate-container, .certificate-container * {
+                visibility: visible;
+            }
+            .certificate-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                border: 5px solid #d4af37;
+            }
+            .print-btn, .winner-name-input {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- شاشة البداية -->
+        <div id="start-screen" class="screen active">
+            <h1>تحدي X O</h1>
+            <div class="teacher-name">إعداد المعلمة: بدرية حكمي</div>
+            <p style="margin-bottom: 25px; color: #636e72; font-weight: 600;">اختبر معلوماتك في مهارات لغتي للصف الثالث الابتدائي بأسلوب ممتع!</p>
+            
+            <div style="margin-bottom: 15px; font-weight: bold;">اختر نمط اللعب:</div>
+            <div class="mode-select">
+                <button class="mode-btn selected" id="mode-pvp" onclick="setGameMode('pvp')">لاعب ضد لاعب 👥</button>
+                <button class="mode-btn" id="mode-ai" onclick="setGameMode('ai')">ضد الكمبيوتر 🤖</button>
+            </div>
+
+            <button class="btn" onclick="startGame()">ابدأ التحدي 🚀</button>
+        </div>
+
+        <!-- شاشة اللعب -->
+        <div id="game-screen" class="screen">
+            <h1>تحدي X O</h1>
+            <div class="teacher-name">إعداد المعلمة: بدرية حكمي</div>
+            
+            <div class="game-info">
+                <div id="p1-info" class="player-turn active-x">س (اللاعب 1)</div>
+                <div id="status-msg">دور اللاعب (س)</div>
+                <div id="p2-info" class="player-turn">و (اللاعب 2)</div>
+            </div>
+
+            <div class="board" id="board">
+                <!-- المربعات تتولد برمجياً -->
+            </div>
+            
+            <button class="mode-btn" style="background:#b2bec3; margin-top:10px;" onclick="goToStart()">العودة للرئيسية</button>
+        </div>
+
+        <!-- شاشة الفوز والشهادة -->
+        <div id="win-screen" class="screen">
+            <h1 id="win-title">🎉 مبروك الفوز! 🎉</h1>
+            
+            <div class="certificate-container" id="cert-area">
+                <div class="cert-title">شهادة تفوق وتميز</div>
+                <div class="cert-body">
+                    تمنح هذه الشهادة للطالب المبدع:
+                    <br>
+                    <input type="text" id="student-name-input" class="winner-name-input" placeholder="اكتب اسم البطل هنا...">
+                    <br>
+                    لتفوقه وإجتازاره المتميز في لعبة <b>تحدي X O في مهارات لغتي</b> للصف الثالث الابتدائي.
+                </div>
+                <div style="margin-top: 20px; display: flex; justify-content: space-around; font-size: 0.95rem; font-weight: bold;">
+                    <div>إشراف المعلمة: بدرية حكمي</div>
+                    <div>مدرسة التميز</div>
+                </div>
+            </div>
+
+            <button class="print-btn" onclick="window.print()">طباعة الشهادة 🖨️</button>
+            <br>
+            <button class="btn" style="margin-top: 15px; font-size: 1rem; padding: 10px 25px;" onclick="resetGame()">لعب من جديد 🔄</button>
+        </div>
+    </div>
+
+    <!-- نافذة الأسئلة -->
+    <div class="modal" id="question-modal">
+        <div class="modal-content">
+            <div class="skill-badge" id="modal-skill">مهارة لغوية</div>
+            <div class="question-text" id="modal-question">نص السؤال هنا؟</div>
+            <div class="options-grid" id="modal-options">
+                <!-- الخيارات تتولد برمجياً -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بنك الأسئلة الشامل لمهارات الصف الثالث الابتدائي
+        const questionBank = [
+            {
+                skill: "اللام الشمسية",
+                question: "أي الكلمات التالية تبدأ بلام شمسية؟",
+                options: ["الْقَمَر", "الشَّمْس", "الْكِتَاب"],
+                correct: 1
+            },
+            {
+                skill: "اللام القمرية",
+                question: "أي الكلمات التالية تبدأ بلام قمرية؟",
+                options: ["السَّمَاء", "الْجَمَل", "الطَّائِرَة"],
+                correct: 1
+            },
+            {
+                skill: "التاء المفتوحة والمربوطة والهاء",
+                question: "اختر الكلمة التي تنتهي بتاء مربوطة (ة):",
+                options: ["بينت", "مُعَلِّمَة", "مياه"],
+                correct: 1
+            },
+            {
+                skill: "أسلوب الاستثناء",
+                question: "أكلت التفاحات إلا تفاحة.. أداة الاستثناء في الجملة هي:",
+                options: ["أكلت", "إلا", "التفاحات"],
+                correct: 1
+            },
+            {
+                skill: "أسلوب التفضيل",
+                question: "الجبل **أَعْلَى** من الشجرة.. كلمة (أعلى) تدل على:",
+                options: ["أسلوب تفضيل", "أسلوب استثناء", "أسلوب تعجب"],
+                correct: 0
+            },
+            {
+                skill: "حروف المد",
+                question: "كلمة (عُصْفُور) بها حرف مد بـ:",
+                options: ["الألف", "الواو", "الياء"],
+                correct: 1
+            },
+            {
+                skill: "التنوين",
+                question: "الكلمة المنونة بتنوين الفتح الصحيحة هي:",
+                options: ["قلمٌ", "قلمٍ", "قَلَماً"],
+                correct: 2
+            },
+            {
+                skill: "همزة الوصل وهمزة القطع",
+                question: "كلمة (أَحْمَد) تبدأ بـ:",
+                options: ["همزة قطع", "همزة وصل", "لام قمرية"],
+                correct: 0
+            },
+            {
+                skill: "الألف المقصورة والألف القائمة",
+                question: "الفعل الماضي المنتهي بألف قائمة (ا) من: (دعا / دعاى)",
+                options: ["دعا", "دعى", "كليهما خطأ"],
+                correct: 0
+            },
+            {
+                skill: "الحرف المضعف (الشدة)",
+                question: "كم عدد الحروف في كلمة (عَلَّمَ) معفكا (الشدة بحرفين)؟",
+                options: ["3 حروف", "4 حروف", "5 حروف"],
+                correct: 1
+            },
+            {
+                skill: "أسماء الإشارة",
+                question: "نستخدم اسم الإشارة (هذان) لـ:",
+                options: ["المفرد المذكر", "المثنى المذكر", "الجمع"],
+                correct: 1
+            },
+            {
+                skill: "علامات الترقيم",
+                question: "ما العلامة المناسبة في نهاية جملة الاستفهام؟ (كيف حالك..)",
+                options: ["النقطة (.)", "علامة الاستفهام (؟)", "الفاصلة (،)"],
+                correct: 1
+            },
+            {
+                skill: "المرادف والضد",
+                question: "ما مرادف كلمة (فرح)؟",
+                options: ["حزن", "سُرُور", "تعب"],
+                correct: 1
+            },
+            {
+                skill: "المرادف والضد",
+                question: "ما ضد (عكس) كلمة (طويل)؟",
+                options: ["قصير", "كبير", "واسع"],
+                correct: 0
+            }
+        ];
+
+        let gameMode = 'pvp'; // pvp أو ai
+        let board = Array(9).fill('');
+        let currentPlayer = 'X'; // X أو O
+        let activeCellIndex = null;
+        let gameActive = true;
+
+        // نظام الصوتيات باستخدام Web Audio API (بدون ملفات خارجية)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.15));
+                    g.gain.setValueAtTime(0.2, audioCtx.currentTime + (idx * 0.15));
+                    o.start(audioCtx.currentTime + (idx * 0.15));
+                    o.stop(audioCtx.currentTime + (idx * 0.15) + 0.2);
+                });
+            }
+        }
+
+        function setGameMode(mode) {
+            gameMode = mode;
+            document.getElementById('mode-pvp').classList.toggle('selected', mode === 'pvp');
+            document.getElementById('mode-ai').classList.toggle('selected', mode === 'ai');
+            playSound('click');
+        }
+
+        function startGame() {
+            playSound('click');
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            // تعديل أسماء اللاعبين حسب النمط
+            if(gameMode === 'ai') {
+                document.getElementById('p2-info').innerText = '🤖 الكمبيوتر';
+            } else {
+                document.getElementById('p2-info').innerText = 'و (اللاعب 2)';
+            }
+            
+            resetBoardState();
+        }
+
+        function goToStart() {
+            playSound('click');
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('win-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+        }
+
+        function resetBoardState() {
+            board = Array(9).fill('');
+            currentPlayer = 'X';
+            gameActive = true;
+            updateTurnUI();
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            board.forEach((val, index) => {
+                const cell = document.createElement('div');
+                cell.className = `cell ${val.toLowerCase()}`;
+                cell.innerText = val;
+                cell.onclick = () => handleCellClick(index);
+                boardEl.appendChild(cell);
+            });
+        }
+
+        function updateTurnUI() {
+            const p1 = document.getElementById('p1-info');
+            const p2 = document.getElementById('p2-info');
+            const msg = document.getElementById('status-msg');
+
+            if (currentPlayer === 'X') {
+                p1.className = 'player-turn active-x';
+                p2.className = 'player-turn';
+                msg.innerText = "دور البطل (س)";
+            } else {
+                p1.className = 'player-turn';
+                p2.className = 'player-turn active-o';
+                msg.innerText = gameMode === 'ai' ? "دور الكمبيوتر 🤖" : "دور البطل (و)";
+            }
+        }
+
+        function handleCellClick(index) {
+            if (!gameActive || board[index] !== '') return;
+            if (gameMode === 'ai' && currentPlayer === 'O') return; // منع اللعب أثناء دور الذكاء الاصطناعي
+
+            playSound('click');
+            activeCellIndex = index;
+            openQuestionModal();
+        }
+
+        function openQuestionModal() {
+            // اختيار سؤال عشوائي
+            const q = questionBank[Math.floor(Math.random() * questionBank.length)];
+            
+            document.getElementById('modal-skill').innerText = "مهارة: " + q.skill;
+            document.getElementById('modal-question').innerText = q.question;
+            
+            const optionsEl = document.getElementById('modal-options');
+            optionsEl.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(idx === q.correct);
+                optionsEl.appendChild(btn);
+            });
+
+            document.getElementById('question-modal').classList.add('show');
+        }
+
+        function checkAnswer(isCorrect) {
+            document.getElementById('question-modal').classList.remove('show');
+
+            if (isCorrect) {
+                playSound('correct');
+                board[activeCellIndex] = currentPlayer;
+                renderBoard();
+
+                if (checkWin(currentPlayer)) {
+                    endGame(currentPlayer);
+                    return;
+                } else if (board.every(cell => cell !== '')) {
+                    endGame('tie');
+                    return;
+                }
+
+                // تبديل الدور
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateTurnUI();
+
+                // إذا كان دور الكمبيوتر
+                if (gameMode === 'ai' && currentPlayer === 'O' && gameActive) {
+                    setTimeout(aiMove, 700);
+                }
+
+            } else {
+                playSound('wrong');
+                alert("إجابة خاطئة! ينتقل الدور للخصم.");
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateTurnUI();
+
+                if (gameMode === 'ai' && currentPlayer === 'O' && gameActive) {
+                    setTimeout(aiMove, 700);
+                }
+            }
+        }
+
+        function aiMove() {
+            if (!gameActive) return;
+            // البحث عن المربعات الفارغة
+            let emptyCells = [];
+            board.forEach((val, idx) => {
+                if (val === '') emptyCells.push(idx);
+            });
+
+            if (emptyCells.length > 0) {
+                // اختيار عشوائي ذكي نسبياً أو عشوائي بسيط
+                let chosenIdx = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                board[chosenIdx] = 'O';
+                playSound('click');
+                renderBoard();
+
+                if (checkWin('O')) {
+                    endGame('O');
+                    return;
+                } else if (board.every(cell => cell !== '')) {
+                    endGame('tie');
+                    return;
+                }
+
+                currentPlayer = 'X';
+                updateTurnUI();
+            }
+        }
+
+        const winPatterns = [
+            [0,1,2], [3,4,5], [6,7,8], // صفوف
+            [0,3,6], [1,4,7], [2,5,8], // أعمدة
+            [0,4,8], [2,4,6]  // أقطار
+        ];
+
+        function checkWin(player) {
+            return winPatterns.some(pattern => {
+                return pattern.every(index => board[index] === player);
+            });
+        }
+
+        function endGame(winner) {
+            gameActive = false;
+            setTimeout(() => {
+                document.getElementById('game-screen').classList.remove('active');
+                document.getElementById('win-screen').classList.add('active');
+
+                if (winner === 'tie') {
+                    document.getElementById('win-title').innerText = "🤝 تعادل رائع!";
+                } else {
+                    playSound('win');
+                    document.getElementById('win-title').innerText = `🎉 الفائز هو اللاعب (${winner})! 🎉`;
+                    // إطلاق ألعاب نارية بالقصاصات
+                    confetti({
+                        particleCount: 150,
+                        spread: 80,
+                        origin: { y: 0.6 }
+                    });
+                }
+            }, 400);
+        }
+
+        function resetGame() {
+            playSound('click');
+            document.getElementById('win-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            resetBoardState();
+        }
+    </script>
+</body>
+</html>
